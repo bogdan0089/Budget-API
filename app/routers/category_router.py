@@ -10,8 +10,8 @@ from app.dto.output.transaction_output import CategoryShortDTO
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 
-async def get_service(db: AsyncSession = Depends(get_db_session)) -> CategoryService:
-    return CategoryService(session=db)
+async def get_service(session: AsyncSession = Depends(get_db_session)) -> CategoryService:
+    return CategoryService(session=session)
 
 
 @router.get("", response_model=list[CategoryShortDTO])

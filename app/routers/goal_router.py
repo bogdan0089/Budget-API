@@ -13,8 +13,8 @@ from app.dto.output.goal_output import GoalOutputDTO
 router = APIRouter(prefix="/goals", tags=["goals"])
 
 
-async def get_service(db: AsyncSession = Depends(get_db_session)) -> GoalService:
-    return GoalService(session=db)
+async def get_service(session: AsyncSession = Depends(get_db_session)) -> GoalService:
+    return GoalService(session=session)
 
 
 @router.post("", response_model=GoalOutputDTO, status_code=201)

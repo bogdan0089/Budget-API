@@ -13,8 +13,8 @@ from app.dto.output.budget_output import BudgetOutputDTO
 router = APIRouter(prefix="/budgets", tags=["budgets"])
 
 
-async def get_service(db: AsyncSession = Depends(get_db_session)) -> BudgetService:
-    return BudgetService(session=db)
+async def get_service(session: AsyncSession = Depends(get_db_session)) -> BudgetService:
+    return BudgetService(session=session)
 
 
 @router.post("", response_model=BudgetOutputDTO, status_code=201)

@@ -10,8 +10,8 @@ from app.dto.output.user_output import UserOutputDTO, TokenOutputDTO
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-async def get_service(db: AsyncSession = Depends(get_db_session)) -> AuthService:
-    return AuthService(session=db)
+async def get_service(session: AsyncSession = Depends(get_db_session)) -> AuthService:
+    return AuthService(session=session)
 
 
 @router.post("/register", response_model=UserOutputDTO, status_code=201)

@@ -13,8 +13,8 @@ from app.dto.output.transaction_output import TransactionOutputDTO
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 
-async def get_service(db: AsyncSession = Depends(get_db_session)) -> TransactionService:
-    return TransactionService(session=db)
+async def get_service(session: AsyncSession = Depends(get_db_session)) -> TransactionService:
+    return TransactionService(session=session)
 
 
 @router.post("", response_model=TransactionOutputDTO, status_code=201)

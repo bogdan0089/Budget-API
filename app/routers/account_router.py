@@ -13,8 +13,8 @@ from app.dto.output.account_output import AccountOutputDTO
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
 
-async def get_service(db: AsyncSession = Depends(get_db_session)) -> AccountService:
-    return AccountService(session=db)
+async def get_service(session: AsyncSession = Depends(get_db_session)) -> AccountService:
+    return AccountService(session=session)
 
 
 @router.post("", response_model=AccountOutputDTO, status_code=201)

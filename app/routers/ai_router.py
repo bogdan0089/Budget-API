@@ -10,8 +10,8 @@ from app.dto.input.ai_input import ChatMessageDTO
 router = APIRouter(prefix="/ai", tags=["ai"])
 
 
-async def get_service(db: AsyncSession = Depends(get_db_session)) -> AiService:
-    return AiService(session=db)
+async def get_service(session: AsyncSession = Depends(get_db_session)) -> AiService:
+    return AiService(session=session)
 
 
 @router.get("/analyze", response_model=str)
