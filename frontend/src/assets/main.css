@@ -1,0 +1,56 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+
+:root {
+  --bs-body-bg: #f0f2f5;
+}
+
+body {
+  background-color: var(--bs-body-bg);
+}
+
+.sidebar {
+  min-height: 100vh;
+  width: 240px;
+  background: #1a1d2e;
+  color: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+.sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.65);
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.sidebar .nav-link .bi {
+  font-size: 1.1rem;
+}
+
+.main-content {
+  margin-left: 240px;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-weight: 600;
+}
