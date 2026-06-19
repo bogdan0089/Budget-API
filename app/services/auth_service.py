@@ -9,8 +9,10 @@ from app.db.models import User, Category, CategoryType
 from app.repositories.user_repository import UserRepository
 from app.dto.input.auth_input import RegisterDTO, LoginDTO
 from app.dto.output.user_output import UserOutputDTO, TokenOutputDTO
+from app.utils.logger import get_logger
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+logger = get_logger(__name__)
 
 DEFAULT_CATEGORIES = [
     {"name": "Їжа", "type": CategoryType.EXPENSE, "icon": "🍕"},
@@ -34,6 +36,7 @@ class AuthService:
     async def register(self, data: RegisterDTO) -> UserOutputDTO:
         existing = await self._user_repo.get_by_email(data.email)
         if existing:
+            logger.warning(f"Registration attempt with existing email: {data.email}")
             raise AlreadyExistsError("User")
 
         user = User(
@@ -56,15 +59,18 @@ class AuthService:
         try:
             await self._session.commit()
             await self._session.refresh(user)
-        except Exception:
+        except Exception as e:
             await self._session.rollback()
+            logger.error(f"Registration failed for {data.email}: {e}", exc_info=True)
             raise
 
+        logger.info(f"User registered: {user.uuid}, email={data.email}")
         return UserOutputDTO.model_validate(user)
 
     async def login(self, data: LoginDTO) -> TokenOutputDTO:
         user = await self._user_repo.get_by_email(data.email)
         if not user or not pwd_context.verify(data.password, user.password_hash):
+            logger.warning(f"Failed login attempt: {data.email}")
             raise InvalidCredentialsError()
 
         payload = {
@@ -72,4 +78,5 @@ class AuthService:
             "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         }
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        logger.info(f"User logged in: {user.uuid}")
         return TokenOutputDTO(access_token=token)

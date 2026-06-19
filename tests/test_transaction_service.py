@@ -81,3 +81,55 @@ async def test_create_transaction_wrong_user(mock_session, sample_account):
                     type=TransactionType.EXPENSE,
                 )
             )
+
+
+@pytest.mark.asyncio
+async def test_list_by_account_no_filters(mock_session, sample_user, sample_account, sample_transaction):
+    service = TransactionService(session=mock_session)
+
+    with patch.object(service._account_repo, "get", return_value=sample_account), \
+         patch.object(service._repo, "list_by_account", return_value=[sample_transaction]) as mock_list:
+
+        result = await service.list_by_account(sample_account.uuid, sample_user.uuid)
+
+    mock_list.assert_called_once_with(sample_account.uuid, 50, 0, None, None, None, None)
+    assert len(result) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_by_account_with_type_filter(mock_session, sample_user, sample_account, sample_transaction):
+    service = TransactionService(session=mock_session)
+
+    with patch.object(service._account_repo, "get", return_value=sample_account), \
+         patch.object(service._repo, "list_by_account", return_value=[sample_transaction]) as mock_list:
+
+        await service.list_by_account(sample_account.uuid, sample_user.uuid, type="expense")
+
+    mock_list.assert_called_once_with(sample_account.uuid, 50, 0, "expense", None, None, None)
+
+
+@pytest.mark.asyncio
+async def test_list_by_account_with_date_filter(mock_session, sample_user, sample_account, sample_transaction):
+    service = TransactionService(session=mock_session)
+    date_from = date(2026, 1, 1)
+    date_to = date(2026, 6, 30)
+
+    with patch.object(service._account_repo, "get", return_value=sample_account), \
+         patch.object(service._repo, "list_by_account", return_value=[sample_transaction]) as mock_list:
+
+        await service.list_by_account(
+            sample_account.uuid, sample_user.uuid, date_from=date_from, date_to=date_to
+        )
+
+    mock_list.assert_called_once_with(sample_account.uuid, 50, 0, None, None, date_from, date_to)
+
+
+@pytest.mark.asyncio
+async def test_list_by_account_wrong_user(mock_session, sample_account):
+    service = TransactionService(session=mock_session)
+    other_user_id = uuid4()
+    sample_account.user_id = uuid4()
+
+    with patch.object(service._account_repo, "get", return_value=sample_account):
+        with pytest.raises(EntityNotFound):
+            await service.list_by_account(sample_account.uuid, other_user_id)
