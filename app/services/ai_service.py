@@ -33,10 +33,10 @@ class AiService:
 
         transactions_text = "\n".join(summary_lines)
 
-        prompt = f"""Analyze these personal finance transactions and give 3 practical insights:
+        prompt = f"""Проаналізуй ці особисті фінансові транзакції та дай 3 практичні поради українською мовою:
 {transactions_text}
 
-Be concise, friendly, and actionable. Focus on spending patterns and savings tips."""
+Відповідай українською. Будь конкретним, дружнім та корисним. Зосередься на патернах витрат та порадах щодо заощаджень."""
 
         response = await groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -48,9 +48,9 @@ Be concise, friendly, and actionable. Focus on spending patterns and savings tip
         accounts = await self._account_repo.list_by_user(user_id)
         total_balance = sum(float(a.balance) for a in accounts)
 
-        system_prompt = f"""You are a personal finance assistant.
-The user has {len(accounts)} account(s) with total balance of {total_balance:.2f} UAH.
-Help them with budgeting, saving, and financial decisions. Be concise and practical."""
+        system_prompt = f"""Ти персональний фінансовий асистент. Завжди відповідай українською мовою.
+Користувач має {len(accounts)} рахунок(и) із загальним балансом {total_balance:.2f} грн.
+Допомагай з бюджетуванням, заощадженнями та фінансовими рішеннями. Будь конкретним та практичним."""
 
         response = await groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
