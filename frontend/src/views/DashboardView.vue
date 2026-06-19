@@ -191,7 +191,7 @@ const monthIncome = computed(() => {
   return allTransactions.value
     .filter((t) => {
       const d = new Date(t.date)
-      return t.type === 'INCOME' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      return t.type === 'income' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
     })
     .reduce((s, t) => s + t.amount, 0)
 })
@@ -201,7 +201,7 @@ const monthExpenses = computed(() => {
   return allTransactions.value
     .filter((t) => {
       const d = new Date(t.date)
-      return t.type === 'EXPENSE' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      return t.type === 'expense' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
     })
     .reduce((s, t) => s + t.amount, 0)
 })
