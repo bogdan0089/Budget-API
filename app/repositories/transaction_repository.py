@@ -13,10 +13,29 @@ class TransactionRepository(BaseRepository[Transaction]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, Transaction)
 
-    async def list_by_account(self, account_id: UUID, limit: int = 50, offset: int = 0) -> list[Transaction]:
+    async def list_by_account(
+            self,
+            account_id: UUID,
+            limit: int = 50,
+            offset: int = 0,
+            type: str | None = None,
+            category_id: UUID | None = None,
+            date_from: date | None = None,
+            date_to: date | None = None
+        ) -> list[Transaction]:
+        filters = [Transaction.account_id == account_id]
+        if type:
+            filters.append(Transaction.type == TransactionType(type.upper()))
+        if category_id:
+            filters.append(Transaction.category_id == category_id)
+        if date_from:
+            filters.append(Transaction.date >= date_from)
+        if date_to:
+            filters.append(Transaction.date <= date_to)
+
         stmt = (
             select(Transaction)
-            .where(Transaction.account_id == account_id)
+            .where(and_(*filters))
             .options(selectinload(Transaction.category))
             .order_by(Transaction.date.desc())
             .limit(limit)

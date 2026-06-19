@@ -11,6 +11,11 @@ from app.repositories.category_repository import CategoryRepository
 from app.dto.input.transaction_input import TransactionCreateDTO
 from app.dto.output.transaction_output import TransactionOutputDTO
 
+from app.utils.logger import get_logger
+
+
+logger = get_logger(__name__)
+
 
 class TransactionService:
     def __init__(self, session: AsyncSession):
@@ -22,6 +27,7 @@ class TransactionService:
     async def create(self, user_id: UUID, data: TransactionCreateDTO) -> TransactionOutputDTO:
         account = await self._account_repo.get(data.account_id)
         if account.user_id != user_id:
+            logger.warning(f"Unauthorized account access: user={user_id}, account={data.account_id}")
             raise EntityNotFound("Account", str(data.account_id))
 
         if data.category_id:
@@ -33,6 +39,7 @@ class TransactionService:
 
         if data.type == TransactionType.EXPENSE:
             if account.balance < amount:
+                logger.warning(f"Insufficient funds: user={user_id}, account={data.account_id}, amount={amount}")
                 raise InsufficientFundsError()
             new_balance = account.balance - amount
         else:
@@ -54,15 +61,28 @@ class TransactionService:
         try:
             await self._session.commit()
             await self._session.refresh(transaction)
-        except Exception:
+        except Exception as e:
             await self._session.rollback()
+            logger.error(f"Transaction commit failed: user={user_id}, error={e}", exc_info=True)
             raise
 
+        logger.info(f"Transaction created: tx={transaction.uuid}, user={user_id}, amount={amount}, type={data.type}")
         return TransactionOutputDTO.model_validate(transaction)
 
-    async def list_by_account(self, account_id: UUID, user_id: UUID, limit: int = 50, offset: int = 0) -> list[TransactionOutputDTO]:
+    async def list_by_account(
+        self,
+        account_id: UUID,
+        user_id: UUID,
+        limit: int = 50,
+        offset: int = 0,
+        type: str | None = None,
+        category_id: UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+    ) -> list[TransactionOutputDTO]:
         account = await self._account_repo.get(account_id)
         if account.user_id != user_id:
+            logger.warning(f"Unauthorized account access: user={user_id}, account={account_id}")
             raise EntityNotFound("Account", str(account_id))
-        transactions = await self._repo.list_by_account(account_id, limit, offset)
+        transactions = await self._repo.list_by_account(account_id, limit, offset, type, category_id, date_from, date_to)
         return [TransactionOutputDTO.model_validate(t) for t in transactions]

@@ -9,6 +9,12 @@ from app.routers.goal_router import router as goal_router
 from app.routers.ai_router import router as ai_router
 from app.routers.category_router import router as category_router
 
+from app.utils.logger import setup_logging, get_logger
+
+setup_logging()
+logger = get_logger(__name__)
+
+
 app = FastAPI(title="Smart Budget API", version="1.0.0")
 
 app.add_middleware(
