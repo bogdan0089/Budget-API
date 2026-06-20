@@ -1,11 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
-from decimal import Decimal
 
 from app.services.account_service import AccountService
 from app.core.exceptions import EntityNotFound
-from app.dto.input.account_input import AccountCreateDTO, AccountUpdateDTO
+from app.dto.input.account_input import AccountCreateDTO
 from app.db.models import AccountType
 
 

@@ -1,6 +1,5 @@
 from uuid import UUID
 from decimal import Decimal
-from datetime import date
 from calendar import monthrange
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import EntityNotFound, AlreadyExistsError
