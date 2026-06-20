@@ -32,3 +32,9 @@ class ValidationError(Exception):
     def __init__(self, detail: str = "Validation error"):
         self.message = detail
         super().__init__(self.message)
+
+
+class InvalidResetTokenError(Exception):
+    def __init__(self, detail: str = "Invalid or expired reset token"):
+        self.message = detail
+        super().__init__(self.message)

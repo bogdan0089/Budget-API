@@ -1,13 +1,15 @@
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 import jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
-from app.core.exceptions import InvalidCredentialsError, AlreadyExistsError
+from app.core.exceptions import InvalidCredentialsError, AlreadyExistsError, InvalidResetTokenError
 from app.db.models import User, Category, CategoryType
 from app.repositories.user_repository import UserRepository
-from app.dto.input.auth_input import RegisterDTO, LoginDTO
+from app.services.email_service import EmailService
+from app.dto.input.auth_input import RegisterDTO, LoginDTO, ForgotPasswordDTO, ResetPasswordDTO, ChangePasswordDTO
 from app.dto.output.user_output import UserOutputDTO, TokenOutputDTO
 from app.utils.logger import get_logger
 
@@ -32,6 +34,7 @@ class AuthService:
     def __init__(self, session: AsyncSession):
         self._session = session
         self._user_repo = UserRepository(session=session)
+        self._email_service = EmailService()
 
     async def register(self, data: RegisterDTO) -> UserOutputDTO:
         existing = await self._user_repo.get_by_email(data.email)
@@ -80,3 +83,60 @@ class AuthService:
         token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         logger.info(f"User logged in: {user.uuid}")
         return TokenOutputDTO(access_token=token)
+
+    def _reset_token_key(self, user: User) -> str:
+        return f"{settings.SECRET_KEY}{user.password_hash}"
+
+    def _generate_reset_token(self, user: User) -> str:
+        payload = {
+            "sub": str(user.uuid),
+            "type": "pwd_reset",
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.RESET_TOKEN_EXPIRE_MINUTES),
+        }
+        return jwt.encode(payload, self._reset_token_key(user), algorithm=settings.ALGORITHM)
+
+    async def request_password_reset(self, data: ForgotPasswordDTO) -> None:
+        user = await self._user_repo.get_by_email(data.email)
+        if not user or not user.is_active:
+            # Never reveal whether the email exists.
+            logger.info(f"Password reset requested for unknown email: {data.email}")
+            return
+
+        token = self._generate_reset_token(user)
+        reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+        await self._email_service.send_password_reset(user.email, user.full_name, reset_link)
+        logger.info(f"Password reset link issued: {user.uuid}")
+
+    async def reset_password(self, data: ResetPasswordDTO) -> None:
+        try:
+            unverified = jwt.decode(data.token, options={"verify_signature": False})
+            user_id = UUID(unverified["sub"])
+        except Exception:
+            raise InvalidResetTokenError()
+
+        user = await self._user_repo.get_by(uuid=user_id)
+        if not user:
+            raise InvalidResetTokenError()
+
+        try:
+            payload = jwt.decode(data.token, self._reset_token_key(user), algorithms=[settings.ALGORITHM])
+        except jwt.ExpiredSignatureError:
+            raise InvalidResetTokenError("Reset link has expired")
+        except jwt.PyJWTError:
+            raise InvalidResetTokenError()
+
+        if payload.get("type") != "pwd_reset":
+            raise InvalidResetTokenError()
+
+        user.password_hash = pwd_context.hash(data.new_password)
+        await self._session.commit()
+        logger.info(f"Password reset completed: {user.uuid}")
+
+    async def change_password(self, user: User, data: ChangePasswordDTO) -> None:
+        if not pwd_context.verify(data.old_password, user.password_hash):
+            logger.warning(f"Wrong current password on change: {user.uuid}")
+            raise InvalidCredentialsError()
+
+        user.password_hash = pwd_context.hash(data.new_password)
+        await self._session.commit()
+        logger.info(f"Password changed: {user.uuid}")
