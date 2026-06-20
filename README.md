@@ -6,7 +6,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat&logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql&logoColor=white)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0_async-D71F00?style=flat)
-![Tests](https://img.shields.io/badge/tests-28_passed-4CAF50?style=flat&logo=pytest&logoColor=white)
+[![CI](https://github.com/bogdan0089/Budget-API/actions/workflows/ci.yml/badge.svg)](https://github.com/bogdan0089/Budget-API/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat)
 
 ---

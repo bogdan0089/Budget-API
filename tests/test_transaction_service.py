@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 from uuid import uuid4
 from decimal import Decimal
 from datetime import date

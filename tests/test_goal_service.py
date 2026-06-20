@@ -1,8 +1,7 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from uuid import uuid4
 from decimal import Decimal
-from datetime import date, datetime
 
 from app.services.goal_service import GoalService
 from app.core.exceptions import EntityNotFound, ValidationError

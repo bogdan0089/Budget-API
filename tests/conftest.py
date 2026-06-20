@@ -4,7 +4,7 @@ from uuid import uuid4
 from datetime import datetime, date
 from decimal import Decimal
 
-from app.db.models import User, Account, AccountType, Transaction, TransactionType, Goal, Budget, Category
+from app.db.models import User, Account, AccountType, Transaction, TransactionType, Goal, Category
 
 
 @pytest.fixture

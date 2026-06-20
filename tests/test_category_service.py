@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 from uuid import uuid4
 
 from app.repositories.category_repository import CategoryRepository

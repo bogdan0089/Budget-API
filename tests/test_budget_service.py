@@ -7,7 +7,7 @@ from datetime import date
 from app.services.budget_service import BudgetService
 from app.core.exceptions import EntityNotFound
 from app.dto.input.budget_input import BudgetCreateDTO, BudgetUpdateDTO
-from app.db.models import Budget, Category
+from app.db.models import Budget
 
 
 @pytest.fixture
