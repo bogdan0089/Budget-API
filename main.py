@@ -9,6 +9,7 @@ from app.routers.goal_router import router as goal_router
 from app.routers.ai_router import router as ai_router
 from app.routers.category_router import router as category_router
 
+from app.core.config import settings
 from app.utils.logger import setup_logging, get_logger
 
 setup_logging()
@@ -19,7 +20,7 @@ app = FastAPI(title="Smart Budget API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=settings.CORS_ORIGIN_LIST,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,3 +33,8 @@ app.include_router(budget_router)
 app.include_router(goal_router)
 app.include_router(ai_router)
 app.include_router(category_router)
+
+
+@app.get("/health", tags=["health"])
+async def health():
+    return {"status": "ok"}
