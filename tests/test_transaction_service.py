@@ -103,9 +103,11 @@ async def test_list_by_account_with_type_filter(mock_session, sample_user, sampl
     with patch.object(service._account_repo, "get", return_value=sample_account), \
          patch.object(service._repo, "list_by_account", return_value=[sample_transaction]) as mock_list:
 
-        await service.list_by_account(sample_account.uuid, sample_user.uuid, type="expense")
+        await service.list_by_account(sample_account.uuid, sample_user.uuid, type=TransactionType.EXPENSE)
 
-    mock_list.assert_called_once_with(sample_account.uuid, 50, 0, "expense", None, None, None)
+    mock_list.assert_called_once_with(
+        sample_account.uuid, 50, 0, TransactionType.EXPENSE, None, None, None
+    )
 
 
 @pytest.mark.asyncio
