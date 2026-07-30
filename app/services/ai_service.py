@@ -5,15 +5,19 @@ from app.core.config import settings
 from app.repositories.transaction_repository import TransactionRepository
 from app.repositories.account_repository import AccountRepository
 
-groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+AI_DISABLED_MESSAGE = "AI insights are disabled. Set GROQ_API_KEY to enable them."
 
 
 class AiService:
     def __init__(self, session: AsyncSession):
         self._transaction_repo = TransactionRepository(session=session)
         self._account_repo = AccountRepository(session=session)
+        self._client = AsyncGroq(api_key=settings.GROQ_API_KEY) if settings.GROQ_API_KEY else None
 
     async def analyze_spending(self, user_id: UUID) -> str:
+        if not self._client:
+            return AI_DISABLED_MESSAGE
+
         accounts = await self._account_repo.list_by_user(user_id)
         if not accounts:
             return "No accounts found. Add an account and transactions to get AI insights."
@@ -38,13 +42,16 @@ class AiService:
 
 Відповідай українською. Будь конкретним, дружнім та корисним. Зосередься на патернах витрат та порадах щодо заощаджень."""
 
-        response = await groq_client.chat.completions.create(
+        response = await self._client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
 
     async def chat(self, user_id: UUID, message: str) -> str:
+        if not self._client:
+            return AI_DISABLED_MESSAGE
+
         accounts = await self._account_repo.list_by_user(user_id)
         total_balance = sum(float(a.balance) for a in accounts)
 
@@ -52,7 +59,7 @@ class AiService:
 Користувач має {len(accounts)} рахунок(и) із загальним балансом {total_balance:.2f} грн.
 Допомагай з бюджетуванням, заощадженнями та фінансовими рішеннями. Будь конкретним та практичним."""
 
-        response = await groq_client.chat.completions.create(
+        response = await self._client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
