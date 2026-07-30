@@ -1,7 +1,9 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env")
+
     DB_USER: str
     DB_PASSWORD: str
     DB_HOST: str
@@ -14,6 +16,8 @@ class Settings(BaseSettings):
 
     GROQ_API_KEY: str = ""
 
+    LOG_LEVEL: str = "INFO"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 
     FRONTEND_URL: str = "http://localhost:5173"
     RESET_TOKEN_EXPIRE_MINUTES: int = 60
@@ -24,15 +28,16 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "Smart Budget <no-reply@smartbudget.app>"
 
     @property
+    def CORS_ORIGIN_LIST(self) -> list[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
     def EMAIL_ENABLED(self) -> bool:
         return bool(self.SMTP_HOST)
 
     @property
     def DATABASE_URL(self) -> str:
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-
-    class Config:
-        env_file = ".env"
 
 
 settings = Settings()

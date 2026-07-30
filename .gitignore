@@ -14,6 +14,9 @@ __pycache__/
 .vscode/
 .idea/
 
+# Vue client — separate repository (bogdan0089/budget-frontend)
+frontend/
+
 # Local lesson material (not part of the project)
 lesson/
 test.py
