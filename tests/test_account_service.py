@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from app.services.account_service import AccountService
 from app.core.exceptions import EntityNotFound
-from app.dto.input.account_input import AccountCreateDTO
+from app.dto.input.account_input import AccountCreateDTO, AccountUpdateDTO
 from app.db.models import AccountType
 
 
@@ -52,6 +52,42 @@ async def test_get_account_wrong_user(mock_session, sample_account):
     with patch.object(service._repo, "get", return_value=sample_account):
         with pytest.raises(EntityNotFound):
             await service.get(sample_account.uuid, other_user_id)
+
+
+@pytest.mark.asyncio
+async def test_update_account(mock_session, sample_user, sample_account):
+    service = AccountService(session=mock_session)
+
+    with patch.object(service._repo, "get", return_value=sample_account), \
+         patch.object(service._repo, "update", new=AsyncMock(return_value=sample_account)) as mock_update:
+        await service.update(
+            sample_account.uuid, sample_user.uuid, AccountUpdateDTO(name="Renamed")
+        )
+
+    mock_update.assert_called_once_with(sample_account.uuid, {"name": "Renamed"})
+
+
+@pytest.mark.asyncio
+async def test_update_account_empty_payload_skips_write(mock_session, sample_user, sample_account):
+    service = AccountService(session=mock_session)
+
+    with patch.object(service._repo, "get", return_value=sample_account), \
+         patch.object(service._repo, "update", new=AsyncMock()) as mock_update:
+        result = await service.update(sample_account.uuid, sample_user.uuid, AccountUpdateDTO())
+
+    mock_update.assert_not_called()
+    assert result.uuid == sample_account.uuid
+
+
+@pytest.mark.asyncio
+async def test_update_account_wrong_user(mock_session, sample_account):
+    service = AccountService(session=mock_session)
+    other_user_id = uuid4()
+    sample_account.user_id = uuid4()
+
+    with patch.object(service._repo, "get", return_value=sample_account):
+        with pytest.raises(EntityNotFound):
+            await service.update(sample_account.uuid, other_user_id, AccountUpdateDTO(name="X"))
 
 
 @pytest.mark.asyncio

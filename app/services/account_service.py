@@ -37,6 +37,8 @@ class AccountService:
         if account.user_id != user_id:
             raise EntityNotFound("Account", str(uuid))
         update_data = data.model_dump(exclude_none=True)
+        if not update_data:
+            return AccountOutputDTO.model_validate(account)
         account = await self._repo.update(uuid, update_data)
         return AccountOutputDTO.model_validate(account)
 
