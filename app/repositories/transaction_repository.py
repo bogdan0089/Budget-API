@@ -18,14 +18,14 @@ class TransactionRepository(BaseRepository[Transaction]):
             account_id: UUID,
             limit: int = 50,
             offset: int = 0,
-            type: str | None = None,
+            type: TransactionType | None = None,
             category_id: UUID | None = None,
             date_from: date | None = None,
             date_to: date | None = None
         ) -> list[Transaction]:
         filters = [Transaction.account_id == account_id]
         if type:
-            filters.append(Transaction.type == TransactionType(type.upper()))
+            filters.append(Transaction.type == type)
         if category_id:
             filters.append(Transaction.category_id == category_id)
         if date_from:

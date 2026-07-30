@@ -75,7 +75,7 @@ class TransactionService:
         user_id: UUID,
         limit: int = 50,
         offset: int = 0,
-        type: str | None = None,
+        type: TransactionType | None = None,
         category_id: UUID | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
