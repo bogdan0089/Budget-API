@@ -23,6 +23,8 @@ Most people don't know where their money goes. Bank apps show transactions but g
 
 Built as a production-ready REST API that any frontend (web, mobile) can connect to.
 
+The Vue web client lives in a separate repository: [budget-frontend](https://github.com/bogdan0089/budget-frontend).
+
 ---
 
 ## ✨ Features
@@ -162,8 +164,11 @@ Interactive docs: **`http://localhost:8000/docs`**
 ### Authentication
 
 ```http
-POST /auth/register    # creates account + 10 default categories
-POST /auth/login       # returns { access_token, token_type }
+POST /auth/register          # creates account + 10 default categories
+POST /auth/login             # returns { access_token, token_type }
+POST /auth/forgot-password   # emails a reset link (logged to console in dev)
+POST /auth/reset-password    # sets a new password by reset token
+POST /auth/change-password   # changes password for the logged-in user
 ```
 
 All other routes require:
@@ -182,10 +187,9 @@ Authorization: Bearer <token>
   DELETE /accounts/{id}      — delete account
 
 💸 Transactions
-  GET    /transactions        — list transactions (filterable by account/type)
-  POST   /transactions        — create transaction (updates balance atomically)
-  GET    /transactions/{id}   — get transaction
-  DELETE /transactions/{id}   — delete transaction
+  POST   /transactions                    — create transaction (updates balance atomically)
+  GET    /transactions/account/{id}       — list account transactions
+                                            (filters: type, category_id, date_from, date_to, limit, offset)
 
 📊 Budgets
   GET    /budgets             — list budgets with spent_amount + remaining
@@ -205,6 +209,9 @@ Authorization: Bearer <token>
 🤖 AI
   GET    /ai/analyze          — AI analysis of your spending patterns
   POST   /ai/chat             — ask anything about your finances
+
+❤️ Service
+  GET    /health              — liveness probe (no auth)
 ```
 
 ---
@@ -216,16 +223,18 @@ pytest tests/ -v
 ```
 
 ```
-28 passed in 0.77s
+50 passed in 1.37s
 ```
 
 All tests are mock-based — no database required. Covers:
 - Account ownership and CRUD
 - Atomic transaction + balance update
 - Insufficient funds guard
+- Transaction filters (type, category, dates)
 - Monthly budget creation, update, spending calculation
 - Goal deposit, progress, completion, guard on already-completed goals
 - Auth registration and login flows
+- AI fallback when no Groq key is configured
 
 ---
 
@@ -242,6 +251,15 @@ All tests are mock-based — no database required. Covers:
 | `ALGORITHM` | ❌ | `HS256` | JWT algorithm |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | ❌ | `60` | Token TTL in minutes |
 | `GROQ_API_KEY` | ❌ | `""` | Groq key — AI features disabled if empty |
+| `LOG_LEVEL` | ❌ | `INFO` | Logging level |
+| `CORS_ORIGINS` | ❌ | `localhost:3000,localhost:5173` | Comma-separated allowed origins |
+| `FRONTEND_URL` | ❌ | `http://localhost:5173` | Base URL used in password reset links |
+| `RESET_TOKEN_EXPIRE_MINUTES` | ❌ | `60` | Reset link TTL in minutes |
+| `SMTP_HOST` | ❌ | `""` | SMTP host — empty means reset links are logged, not emailed |
+| `SMTP_PORT` | ❌ | `587` | SMTP port |
+| `SMTP_USER` | ❌ | `""` | SMTP username |
+| `SMTP_PASSWORD` | ❌ | `""` | SMTP password |
+| `SMTP_FROM` | ❌ | `Smart Budget <no-reply@smartbudget.app>` | Sender address |
 
 ---
 
