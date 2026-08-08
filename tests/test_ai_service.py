@@ -32,3 +32,25 @@ async def test_analyze_spending_without_accounts(mock_session):
             result = await service.analyze_spending(uuid4())
 
     assert "No accounts found" in result
+
+
+@pytest.mark.asyncio
+async def test_analyze_spending_without_transactions(mock_session, sample_account):
+    with patch.object(ai_service.settings, "GROQ_API_KEY", "test-key"):
+        service = AiService(session=mock_session)
+        with patch.object(service._account_repo, "list_by_user", return_value=[sample_account]), \
+             patch.object(service._transaction_repo, "list_recent_by_user", return_value=[]):
+            result = await service.analyze_spending(sample_account.user_id)
+
+    assert "No transactions found" in result
+
+
+@pytest.mark.asyncio
+async def test_analyze_spending_reads_transactions_once(mock_session, sample_account):
+    with patch.object(ai_service.settings, "GROQ_API_KEY", "test-key"):
+        service = AiService(session=mock_session)
+        with patch.object(service._account_repo, "list_by_user", return_value=[sample_account, sample_account]), \
+             patch.object(service._transaction_repo, "list_recent_by_user", return_value=[]) as mock_list:
+            await service.analyze_spending(sample_account.user_id)
+
+    mock_list.assert_called_once()
