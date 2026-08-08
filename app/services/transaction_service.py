@@ -45,8 +45,7 @@ class TransactionService:
         else:
             new_balance = account.balance + amount
 
-        for key, value in {"balance": new_balance}.items():
-            setattr(account, key, value)
+        account.balance = new_balance
 
         transaction = Transaction(
             account_id=data.account_id,
