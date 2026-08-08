@@ -63,8 +63,10 @@ class BudgetService:
         days_in_month = monthrange(month_start.year, month_start.month)[1]
         month_end = month_start.replace(day=days_in_month)
 
+        # Categories can be shared across users, so the spend has to be scoped
+        # to the budget owner via their accounts.
         spent = await self._transaction_repo.get_spent_by_category(
-            budget.category_id, month_start, month_end
+            budget.category_id, budget.user_id, month_start, month_end
         )
         spent = Decimal(str(spent))
         limit = Decimal(str(budget.limit_amount))

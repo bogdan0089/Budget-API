@@ -57,13 +57,20 @@ class TransactionRepository(BaseRepository[Transaction]):
         return list(result.scalars().all())
 
 
-    async def get_spent_by_category(self, category_id: UUID, month_start: date, month_end: date) -> Decimal:
-        stmt = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-            and_(
-                Transaction.category_id == category_id,
-                Transaction.type == TransactionType.EXPENSE,
-                Transaction.date >= month_start,
-                Transaction.date <= month_end,
+    async def get_spent_by_category(
+        self, category_id: UUID, user_id: UUID, month_start: date, month_end: date
+    ) -> Decimal:
+        stmt = (
+            select(func.coalesce(func.sum(Transaction.amount), 0))
+            .join(Account, Transaction.account_id == Account.uuid)
+            .where(
+                and_(
+                    Transaction.category_id == category_id,
+                    Account.user_id == user_id,
+                    Transaction.type == TransactionType.EXPENSE,
+                    Transaction.date >= month_start,
+                    Transaction.date <= month_end,
+                )
             )
         )
         result = await self._session.execute(stmt)

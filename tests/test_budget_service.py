@@ -107,3 +107,17 @@ async def test_delete_budget(mock_session, sample_user, sample_budget):
         await service.delete(sample_budget.uuid, sample_user.uuid)
 
     mock_delete.assert_called_once_with(sample_budget.uuid)
+
+
+@pytest.mark.asyncio
+async def test_spent_is_scoped_to_budget_owner(mock_session, sample_user, sample_budget, sample_category):
+    service = BudgetService(session=mock_session)
+
+    with patch.object(service._repo, "list_by_user", return_value=[sample_budget]), \
+         patch.object(service._transaction_repo, "get_spent_by_category", return_value=Decimal("0.00")) as mock_spent:
+
+        await service.list_budgets(sample_user.uuid)
+
+    args = mock_spent.call_args.args
+    assert args[0] == sample_budget.category_id
+    assert args[1] == sample_budget.user_id
