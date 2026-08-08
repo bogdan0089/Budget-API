@@ -26,7 +26,8 @@ def sample_budget(sample_user, sample_category):
 async def test_create_budget(mock_session, sample_user, sample_budget, sample_category):
     service = BudgetService(session=mock_session)
 
-    with patch.object(service._repo, "get_by_user_and_category", return_value=None), \
+    with patch.object(service._category_repo, "get_by", return_value=sample_category), \
+         patch.object(service._repo, "get_by_user_and_category", return_value=None), \
          patch.object(service._repo, "add", return_value=sample_budget), \
          patch.object(service._repo, "get_with_category", return_value=sample_budget), \
          patch.object(service._transaction_repo, "get_spent_by_category", return_value=Decimal("1000.00")):
@@ -59,7 +60,8 @@ async def test_budget_remaining_zero_when_exceeded(mock_session, sample_user, sa
     service = BudgetService(session=mock_session)
     sample_budget.limit_amount = Decimal("1000.00")
 
-    with patch.object(service._repo, "get_by_user_and_category", return_value=None), \
+    with patch.object(service._category_repo, "get_by", return_value=sample_category), \
+         patch.object(service._repo, "get_by_user_and_category", return_value=None), \
          patch.object(service._repo, "add", return_value=sample_budget), \
          patch.object(service._repo, "get_with_category", return_value=sample_budget), \
          patch.object(service._transaction_repo, "get_spent_by_category", return_value=Decimal("1500.00")):
@@ -107,3 +109,35 @@ async def test_delete_budget(mock_session, sample_user, sample_budget):
         await service.delete(sample_budget.uuid, sample_user.uuid)
 
     mock_delete.assert_called_once_with(sample_budget.uuid)
+
+
+@pytest.mark.asyncio
+async def test_create_budget_with_foreign_category(mock_session, sample_user, sample_category):
+    service = BudgetService(session=mock_session)
+    sample_category.user_id = uuid4()
+
+    with patch.object(service._category_repo, "get_by", return_value=sample_category):
+        with pytest.raises(EntityNotFound):
+            await service.create(
+                sample_user.uuid,
+                BudgetCreateDTO(category_id=sample_category.uuid, month=date(2026, 6, 1), limit_amount=5000.0),
+            )
+
+
+@pytest.mark.asyncio
+async def test_create_budget_with_shared_category(mock_session, sample_user, sample_budget, sample_category):
+    service = BudgetService(session=mock_session)
+    sample_category.user_id = None
+
+    with patch.object(service._category_repo, "get_by", return_value=sample_category), \
+         patch.object(service._repo, "get_by_user_and_category", return_value=None), \
+         patch.object(service._repo, "add", return_value=sample_budget), \
+         patch.object(service._repo, "get_with_category", return_value=sample_budget), \
+         patch.object(service._transaction_repo, "get_spent_by_category", return_value=Decimal("0.00")):
+
+        result = await service.create(
+            sample_user.uuid,
+            BudgetCreateDTO(category_id=sample_category.uuid, month=date(2026, 6, 1), limit_amount=5000.0),
+        )
+
+    assert result.limit_amount == Decimal("5000.00")
