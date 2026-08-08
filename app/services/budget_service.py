@@ -6,6 +6,7 @@ from app.core.exceptions import EntityNotFound, AlreadyExistsError
 from app.db.models import Budget
 from app.repositories.budget_repository import BudgetRepository
 from app.repositories.transaction_repository import TransactionRepository
+from app.repositories.category_repository import CategoryRepository
 from app.dto.input.budget_input import BudgetCreateDTO, BudgetUpdateDTO
 from app.dto.output.budget_output import BudgetOutputDTO
 from app.utils.logger import get_logger
@@ -17,9 +18,16 @@ class BudgetService:
     def __init__(self, session: AsyncSession):
         self._repo = BudgetRepository(session=session)
         self._transaction_repo = TransactionRepository(session=session)
+        self._category_repo = CategoryRepository(session=session)
 
     async def create(self, user_id: UUID, data: BudgetCreateDTO) -> BudgetOutputDTO:
         month_start = data.month.replace(day=1)
+
+        # Own categories or the shared ones (user_id is None) only.
+        category = await self._category_repo.get_by(uuid=data.category_id)
+        if not category or (category.user_id is not None and category.user_id != user_id):
+            logger.warning(f"Unknown budget category: user={user_id}, category={data.category_id}")
+            raise EntityNotFound("Category", str(data.category_id))
 
         existing = await self._repo.get_by_user_and_category(user_id, data.category_id, month_start)
         if existing:
