@@ -1,13 +1,12 @@
 from uuid import UUID
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
 from app.db.models import User, TransactionType
 from app.dependencies.auth import get_current_user
 from app.services.transaction_service import TransactionService
-from app.core.exceptions import EntityNotFound, InsufficientFundsError
 from app.dto.input.transaction_input import TransactionCreateDTO
 from app.dto.output.transaction_output import TransactionOutputDTO
 
@@ -24,12 +23,16 @@ async def create_transaction(
     current_user: User = Depends(get_current_user),
     service: TransactionService = Depends(get_service),
 ):
-    try:
-        return await service.create(current_user.uuid, data)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except InsufficientFundsError as e:
-        raise HTTPException(status_code=422, detail=e.message)
+    return await service.create(current_user.uuid, data)
+
+
+@router.delete("/{transaction_id}", status_code=204)
+async def delete_transaction(
+    transaction_id: UUID,
+    current_user: User = Depends(get_current_user),
+    service: TransactionService = Depends(get_service),
+):
+    await service.delete(transaction_id, current_user.uuid)
 
 
 @router.get("/account/{account_id}", response_model=list[TransactionOutputDTO])
@@ -44,9 +47,6 @@ async def list_transactions(
     current_user: User = Depends(get_current_user),
     service: TransactionService = Depends(get_service),
 ):
-    try:
-        return await service.list_by_account(
-            account_id, current_user.uuid, limit, offset, type, category_id, date_from, date_to
-        )
-    except EntityNotFound as e:
-        raise HTTPException(status_code=404, detail=e.message)
+    return await service.list_by_account(
+        account_id, current_user.uuid, limit, offset, type, category_id, date_from, date_to
+    )
