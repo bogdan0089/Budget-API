@@ -1,5 +1,5 @@
 from datetime import date
-from sqlalchemy import Column, String, Boolean, ForeignKey, Numeric, Date, Enum as SAEnum
+from sqlalchemy import Column, String, Boolean, ForeignKey, Numeric, Date, UniqueConstraint, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
@@ -82,6 +82,9 @@ class Transaction(BaseModel):
 
 class Budget(BaseModel):
     __tablename__ = "budgets"
+    __table_args__ = (
+        UniqueConstraint("user_id", "category_id", "month", name="uq_budget_user_category_month"),
+    )
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.uuid", ondelete="CASCADE"), nullable=False)
     category_id = Column(UUID(as_uuid=True), ForeignKey("categories.uuid", ondelete="CASCADE"), nullable=False)
