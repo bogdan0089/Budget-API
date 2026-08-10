@@ -54,7 +54,8 @@ class BudgetService:
         if budget.user_id != user_id:
             logger.warning(f"Unauthorized budget update: user={user_id}, budget={uuid}")
             raise EntityNotFound("Budget", str(uuid))
-        budget = await self._repo.update(uuid, {"limit_amount": data.limit_amount})
+        await self._repo.update(uuid, {"limit_amount": data.limit_amount})
+        budget = await self._repo.get_with_category(uuid)
         logger.info(f"Budget updated: budget={uuid}, user={user_id}, new_limit={data.limit_amount}")
         return await self._to_dto(budget)
 

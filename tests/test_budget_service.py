@@ -81,6 +81,7 @@ async def test_update_budget(mock_session, sample_user, sample_budget, sample_ca
 
     with patch.object(service._repo, "get", return_value=sample_budget), \
          patch.object(service._repo, "update", return_value=sample_budget), \
+         patch.object(service._repo, "get_with_category", return_value=sample_budget), \
          patch.object(service._transaction_repo, "get_spent_by_category", return_value=Decimal("0.00")):
 
         result = await service.update(sample_budget.uuid, sample_user.uuid, BudgetUpdateDTO(limit_amount=8000.0))

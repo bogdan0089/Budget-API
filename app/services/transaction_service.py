@@ -59,7 +59,9 @@ class TransactionService:
 
         try:
             await self._session.commit()
-            await self._session.refresh(transaction)
+            # A plain refresh does not load relationships, and the output DTO reads
+            # transaction.category — a lazy load there would blow up outside greenlet.
+            await self._session.refresh(transaction, ["category"])
         except Exception as e:
             await self._session.rollback()
             logger.error(f"Transaction commit failed: user={user_id}, error={e}", exc_info=True)
@@ -67,6 +69,35 @@ class TransactionService:
 
         logger.info(f"Transaction created: tx={transaction.uuid}, user={user_id}, amount={amount}, type={data.type}")
         return TransactionOutputDTO.model_validate(transaction)
+
+    async def delete(self, uuid: UUID, user_id: UUID) -> None:
+        transaction = await self._repo.get(uuid)
+        account = await self._account_repo.get(transaction.account_id)
+        if account.user_id != user_id:
+            logger.warning(f"Unauthorized transaction delete: user={user_id}, tx={uuid}")
+            raise EntityNotFound("Transaction", str(uuid))
+
+        amount = Decimal(str(transaction.amount))
+
+        if transaction.type == TransactionType.EXPENSE:
+            new_balance = account.balance + amount
+        else:
+            new_balance = account.balance - amount
+            if new_balance < 0:
+                logger.warning(f"Delete would overdraw account: user={user_id}, tx={uuid}, amount={amount}")
+                raise InsufficientFundsError()
+
+        account.balance = new_balance
+        await self._session.delete(transaction)
+
+        try:
+            await self._session.commit()
+        except Exception as e:
+            await self._session.rollback()
+            logger.error(f"Transaction delete failed: user={user_id}, tx={uuid}, error={e}", exc_info=True)
+            raise
+
+        logger.info(f"Transaction deleted: tx={uuid}, user={user_id}, amount={amount}, type={transaction.type}")
 
     async def list_by_account(
         self,
