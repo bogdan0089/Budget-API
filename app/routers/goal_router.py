@@ -1,12 +1,11 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
 from app.db.models import User
 from app.dependencies.auth import get_current_user
 from app.services.goal_service import GoalService
-from app.core.exceptions import EntityNotFound, ValidationError
 from app.dto.input.goal_input import GoalCreateDTO, GoalDepositDTO
 from app.dto.output.goal_output import GoalOutputDTO
 
@@ -41,12 +40,7 @@ async def deposit_to_goal(
     current_user: User = Depends(get_current_user),
     service: GoalService = Depends(get_service),
 ):
-    try:
-        return await service.deposit(goal_id, current_user.uuid, data)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=404, detail=e.message)
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+    return await service.deposit(goal_id, current_user.uuid, data)
 
 
 @router.delete("/{goal_id}", status_code=204)
@@ -55,7 +49,4 @@ async def delete_goal(
     current_user: User = Depends(get_current_user),
     service: GoalService = Depends(get_service),
 ):
-    try:
-        await service.delete(goal_id, current_user.uuid)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=404, detail=e.message)
+    await service.delete(goal_id, current_user.uuid)

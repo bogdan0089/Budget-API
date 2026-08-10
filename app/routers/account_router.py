@@ -1,12 +1,11 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
 from app.db.models import User
 from app.dependencies.auth import get_current_user
 from app.services.account_service import AccountService
-from app.core.exceptions import EntityNotFound
 from app.dto.input.account_input import AccountCreateDTO, AccountUpdateDTO
 from app.dto.output.account_output import AccountOutputDTO
 
@@ -40,10 +39,7 @@ async def get_account(
     current_user: User = Depends(get_current_user),
     service: AccountService = Depends(get_service),
 ):
-    try:
-        return await service.get(account_id, current_user.uuid)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=404, detail=e.message)
+    return await service.get(account_id, current_user.uuid)
 
 
 @router.patch("/{account_id}", response_model=AccountOutputDTO)
@@ -53,10 +49,7 @@ async def update_account(
     current_user: User = Depends(get_current_user),
     service: AccountService = Depends(get_service),
 ):
-    try:
-        return await service.update(account_id, current_user.uuid, data)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=404, detail=e.message)
+    return await service.update(account_id, current_user.uuid, data)
 
 
 @router.delete("/{account_id}", status_code=204)
@@ -65,7 +58,4 @@ async def delete_account(
     current_user: User = Depends(get_current_user),
     service: AccountService = Depends(get_service),
 ):
-    try:
-        await service.delete(account_id, current_user.uuid)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=404, detail=e.message)
+    await service.delete(account_id, current_user.uuid)
