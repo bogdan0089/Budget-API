@@ -32,7 +32,7 @@ The Vue web client lives in a separate repository: [budget-frontend](https://git
 | Feature | Description |
 |---------|-------------|
 | 🏦 **Multi-account** | Cash, card, savings, credit — all in one place |
-| 💸 **Transactions** | Income & expense with categories; balance updated atomically |
+| 💸 **Transactions** | Income & expense with categories; balance updated atomically, delete rolls it back |
 | 📊 **Budgets** | Monthly limits per category — shows spent, remaining, % used |
 | 🎯 **Goals** | Savings targets with deposit tracking and auto-completion |
 | 🏷️ **Categories** | 10 default categories auto-created on registration |
@@ -92,11 +92,12 @@ app/
 │   └── auth.py     # get_current_user — JWT decode → User object
 │
 └── core/
-    ├── config.py       # Settings from .env via pydantic-settings
-    └── exceptions.py   # Domain exceptions: EntityNotFound, InsufficientFunds, etc.
+    ├── config.py          # Settings from .env via pydantic-settings
+    ├── exceptions.py      # Domain exceptions: EntityNotFound, InsufficientFunds, etc.
+    └── error_handlers.py  # One mapping domain exception → HTTP status for the whole app
 
 alembic/        # Async Alembic migrations
-tests/          # 28 mock-based pytest-asyncio tests (no DB needed)
+tests/          # mock-based pytest-asyncio tests (no DB needed)
 ```
 
 ---
@@ -190,6 +191,7 @@ Authorization: Bearer <token>
   POST   /transactions                    — create transaction (updates balance atomically)
   GET    /transactions/account/{id}       — list account transactions
                                             (filters: type, category_id, date_from, date_to, limit, offset)
+  DELETE /transactions/{id}               — delete transaction (rolls the balance back)
 
 📊 Budgets
   GET    /budgets             — list budgets with spent_amount + remaining
@@ -223,18 +225,20 @@ pytest tests/ -v
 ```
 
 ```
-50 passed in 1.37s
+66 passed in 2.62s
 ```
 
 All tests are mock-based — no database required. Covers:
 - Account ownership and CRUD
 - Atomic transaction + balance update
 - Insufficient funds guard
+- Transaction delete with balance rollback and overdraw guard
 - Transaction filters (type, category, dates)
 - Monthly budget creation, update, spending calculation
 - Goal deposit, progress, completion, guard on already-completed goals
 - Auth registration and login flows
 - AI fallback when no Groq key is configured
+- Every domain exception maps to its HTTP status code
 
 ---
 

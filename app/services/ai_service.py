@@ -22,16 +22,15 @@ class AiService:
         if not accounts:
             return "No accounts found. Add an account and transactions to get AI insights."
 
-        all_transactions = []
-        for account in accounts:
-            transactions = await self._transaction_repo.list_by_account(account.uuid, limit=50)
-            all_transactions.extend(transactions)
+        # One query across every account, otherwise the sample is whatever the first
+        # account happened to return instead of the user's latest activity.
+        transactions = await self._transaction_repo.list_recent_by_user(user_id, limit=30)
 
-        if not all_transactions:
+        if not transactions:
             return "No transactions found yet. Add some transactions to get personalized insights."
 
         summary_lines = []
-        for t in all_transactions[:30]:
+        for t in transactions:
             category = t.category.name if t.category else "Uncategorized"
             summary_lines.append(f"{t.type.value}: {t.amount} UAH — {category} ({t.date})")
 

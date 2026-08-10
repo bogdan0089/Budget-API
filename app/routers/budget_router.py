@@ -1,12 +1,11 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db_session
 from app.db.models import User
 from app.dependencies.auth import get_current_user
 from app.services.budget_service import BudgetService
-from app.core.exceptions import EntityNotFound, AlreadyExistsError
 from app.dto.input.budget_input import BudgetCreateDTO, BudgetUpdateDTO
 from app.dto.output.budget_output import BudgetOutputDTO
 
@@ -23,10 +22,7 @@ async def create_budget(
     current_user: User = Depends(get_current_user),
     service: BudgetService = Depends(get_service),
 ):
-    try:
-        return await service.create(current_user.uuid, data)
-    except AlreadyExistsError as e:
-        raise HTTPException(status_code=409, detail=e.message)
+    return await service.create(current_user.uuid, data)
 
 
 @router.get("", response_model=list[BudgetOutputDTO])
@@ -44,10 +40,7 @@ async def update_budget(
     current_user: User = Depends(get_current_user),
     service: BudgetService = Depends(get_service),
 ):
-    try:
-        return await service.update(budget_id, current_user.uuid, data)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=404, detail=e.message)
+    return await service.update(budget_id, current_user.uuid, data)
 
 
 @router.delete("/{budget_id}", status_code=204)
@@ -56,7 +49,4 @@ async def delete_budget(
     current_user: User = Depends(get_current_user),
     service: BudgetService = Depends(get_service),
 ):
-    try:
-        await service.delete(budget_id, current_user.uuid)
-    except EntityNotFound as e:
-        raise HTTPException(status_code=404, detail=e.message)
+    await service.delete(budget_id, current_user.uuid)

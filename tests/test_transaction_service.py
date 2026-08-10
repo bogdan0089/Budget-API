@@ -84,6 +84,67 @@ async def test_create_transaction_wrong_user(mock_session, sample_account):
 
 
 @pytest.mark.asyncio
+async def test_delete_expense_returns_money_to_account(mock_session, sample_user, sample_account, sample_transaction):
+    service = TransactionService(session=mock_session)
+    sample_account.balance = Decimal("9500.00")
+    sample_transaction.type = TransactionType.EXPENSE
+    sample_transaction.amount = Decimal("500.00")
+
+    with patch.object(service._repo, "get", return_value=sample_transaction), \
+         patch.object(service._account_repo, "get", return_value=sample_account):
+
+        await service.delete(sample_transaction.uuid, sample_user.uuid)
+
+    assert sample_account.balance == Decimal("10000.00")
+    mock_session.delete.assert_awaited_once_with(sample_transaction)
+
+
+@pytest.mark.asyncio
+async def test_delete_income_takes_money_back(mock_session, sample_user, sample_account, sample_transaction):
+    service = TransactionService(session=mock_session)
+    sample_account.balance = Decimal("11000.00")
+    sample_transaction.type = TransactionType.INCOME
+    sample_transaction.amount = Decimal("1000.00")
+
+    with patch.object(service._repo, "get", return_value=sample_transaction), \
+         patch.object(service._account_repo, "get", return_value=sample_account):
+
+        await service.delete(sample_transaction.uuid, sample_user.uuid)
+
+    assert sample_account.balance == Decimal("10000.00")
+
+
+@pytest.mark.asyncio
+async def test_delete_income_blocked_when_money_already_spent(
+    mock_session, sample_user, sample_account, sample_transaction
+):
+    service = TransactionService(session=mock_session)
+    sample_account.balance = Decimal("100.00")
+    sample_transaction.type = TransactionType.INCOME
+    sample_transaction.amount = Decimal("1000.00")
+
+    with patch.object(service._repo, "get", return_value=sample_transaction), \
+         patch.object(service._account_repo, "get", return_value=sample_account):
+        with pytest.raises(InsufficientFundsError):
+            await service.delete(sample_transaction.uuid, sample_user.uuid)
+
+    assert sample_account.balance == Decimal("100.00")
+
+
+@pytest.mark.asyncio
+async def test_delete_transaction_wrong_user(mock_session, sample_account, sample_transaction):
+    service = TransactionService(session=mock_session)
+    sample_account.user_id = uuid4()
+
+    with patch.object(service._repo, "get", return_value=sample_transaction), \
+         patch.object(service._account_repo, "get", return_value=sample_account):
+        with pytest.raises(EntityNotFound):
+            await service.delete(sample_transaction.uuid, uuid4())
+
+    mock_session.delete.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_list_by_account_no_filters(mock_session, sample_user, sample_account, sample_transaction):
     service = TransactionService(session=mock_session)
 

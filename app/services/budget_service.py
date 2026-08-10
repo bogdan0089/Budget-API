@@ -54,7 +54,8 @@ class BudgetService:
         if budget.user_id != user_id:
             logger.warning(f"Unauthorized budget update: user={user_id}, budget={uuid}")
             raise EntityNotFound("Budget", str(uuid))
-        budget = await self._repo.update(uuid, {"limit_amount": data.limit_amount})
+        await self._repo.update(uuid, {"limit_amount": data.limit_amount})
+        budget = await self._repo.get_with_category(uuid)
         logger.info(f"Budget updated: budget={uuid}, user={user_id}, new_limit={data.limit_amount}")
         return await self._to_dto(budget)
 
@@ -71,8 +72,10 @@ class BudgetService:
         days_in_month = monthrange(month_start.year, month_start.month)[1]
         month_end = month_start.replace(day=days_in_month)
 
+        # Categories can be shared across users, so the spend has to be scoped
+        # to the budget owner via their accounts.
         spent = await self._transaction_repo.get_spent_by_category(
-            budget.category_id, month_start, month_end
+            budget.category_id, budget.user_id, month_start, month_end
         )
         spent = Decimal(str(spent))
         limit = Decimal(str(budget.limit_amount))
